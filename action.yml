@@ -52,11 +52,11 @@ runs:
       run: npm install -g @augmentcode/auggie
       shell: bash
     - name: Setup Bun
-      uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
-      with:
-        bun-version: latest
+      shell: bash
+      run: |
+         apt-get update && apt-get install -y curl unzip && curl -fsSL https://bun.sh/install | bash
     - name: Run Augment Agent
-      run: bun run $GITHUB_ACTION_PATH/src/index.ts
+      run: $HOME/.bun/bin/bun run $GITHUB_ACTION_PATH/src/index.ts
       shell: bash
       env:
         INPUT_AUGMENT_SESSION_AUTH: ${{ inputs.augment_session_auth }}
