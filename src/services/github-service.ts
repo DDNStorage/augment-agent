@@ -12,8 +12,12 @@ export class GitHubService {
   private owner: string;
   private repo: string;
 
-  constructor(config: { token: string; owner: string; repo: string }) {
-    this.octokit = new Octokit({ auth: config.token });
+  constructor(config: { token: string; owner: string; repo: string; baseUrl?: string }) {
+    const octokitConfig: any = { auth: config.token };
+    if (config.baseUrl) {
+      octokitConfig.baseUrl = config.baseUrl;
+    }
+    this.octokit = new Octokit(octokitConfig);
     this.owner = config.owner;
     this.repo = config.repo;
   }

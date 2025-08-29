@@ -43,4 +43,5 @@ jobs:
         with:
           augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # github_api_url: "https://github.company.com/api/v3"  # For GitHub Enterprise
           instruction_file: /tmp/pr-instruction.txt

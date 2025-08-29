@@ -14,6 +14,7 @@ export const INPUT_FIELD_MAP: Record<string, InputField> = {
   augmentApiUrl: { envVar: 'INPUT_AUGMENT_API_URL', required: false },
   customContext: { envVar: 'INPUT_CUSTOM_CONTEXT', required: false },
   githubToken: { envVar: 'INPUT_GITHUB_TOKEN', required: false },
+  githubApiUrl: { envVar: 'INPUT_GITHUB_API_URL', required: false },
   instruction: { envVar: 'INPUT_INSTRUCTION', required: false },
   instructionFile: { envVar: 'INPUT_INSTRUCTION_FILE', required: false },
   pullNumber: {

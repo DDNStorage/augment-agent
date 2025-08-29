@@ -15,6 +15,9 @@ inputs:
   github_token:
     description: "GitHub token for API access. Must have 'repo' and 'user:email' scopes."
     required: false
+  github_api_url:
+    description: "GitHub API base URL for private GitHub instances (e.g., 'https://github.company.com/api/v3'). Leave empty for GitHub.com."
+    required: false
   instruction:
     description: "Direct instruction text for the AI agent. Use this for simple, inline instructions. Mutually exclusive with instruction_file and template inputs."
     required: false
@@ -63,6 +66,7 @@ runs:
         INPUT_AUGMENT_API_TOKEN: ${{ inputs.augment_api_token }}
         INPUT_AUGMENT_API_URL: ${{ inputs.augment_api_url }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+        INPUT_GITHUB_API_URL: ${{ inputs.github_api_url }}
         INPUT_INSTRUCTION: ${{ inputs.instruction }}
         INPUT_INSTRUCTION_FILE: ${{ inputs.instruction_file }}
         INPUT_TEMPLATE_DIRECTORY: ${{ inputs.template_directory }}

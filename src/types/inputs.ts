@@ -14,6 +14,7 @@ export interface ActionInputs {
   augmentApiToken?: string | undefined;
   augmentApiUrl?: string | undefined;
   githubToken?: string | undefined;
+  githubApiUrl?: string | undefined;
   instruction?: string | undefined;
   instructionFile?: string | undefined;
   model?: string | undefined;

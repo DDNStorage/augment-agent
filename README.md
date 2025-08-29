@@ -72,6 +72,7 @@ Each example includes a complete workflow file that you can copy to your `.githu
 | `augment_api_token`    | API token for Augment services (store as secret)      | No\*\*   | `${{ secrets.AUGMENT_API_TOKEN }}`          |
 | `augment_api_url`      | Augment API endpoint URL (store as variable)          | No\*\*   | `${{ vars.AUGMENT_API_URL }}`               |
 | `github_token`         | GitHub token with `repo` and `user:email` scopes.     | No       | `${{ secrets.GITHUB_TOKEN }}`               |
+| `github_api_url`       | GitHub API base URL for private instances             | No       | `https://github.company.com/api/v3`         |
 | `instruction`          | Direct instruction text for simple commands           | No\*     | `"Generate PR description"`                 |
 | `instruction_file`     | Path to file with detailed instructions               | No\*     | `/tmp/instruction.txt`                      |
 | `template_directory`   | Path to template directory for dynamic instructions   | No\*     | `.github/templates`                         |
@@ -84,6 +85,22 @@ Each example includes a complete workflow file that you can copy to your `.githu
 \*Either `instruction`, `instruction_file`, or `template_directory` must be provided.
 
 \*\*Either `augment_session_auth` OR both `augment_api_token` and `augment_api_url` must be provided for authentication.
+
+### GitHub Enterprise / Private Instances
+
+For private GitHub instances (GitHub Enterprise Server), you need to specify the `github_api_url` parameter:
+
+```yaml
+- name: Run Augment Agent
+  uses: augmentcode/augment-agent@v0
+  with:
+    augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    github_api_url: "https://github.company.com/api/v3"
+    instruction: "Review this PR for security issues"
+```
+
+The `github_api_url` should be the base URL for your GitHub Enterprise API, typically in the format `https://your-github-domain.com/api/v3`. Leave this parameter empty when using GitHub.com.
 
 ### Template System
 

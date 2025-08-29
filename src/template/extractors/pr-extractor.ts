@@ -30,6 +30,7 @@ export class PRExtractor extends BaseExtractor<PRData> {
           token: inputs.githubToken,
           owner: repoInfo.owner,
           repo: repoInfo.repo,
+          baseUrl: inputs.githubApiUrl,
         });
         logger.debug('PRExtractor created with pre-configured GitHubService', {
           owner: repoInfo.owner,

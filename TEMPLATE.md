@@ -19,6 +19,7 @@ Templates are ideal when you need:
   with:
     augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
     github_token: ${{ secrets.GITHUB_TOKEN }}
+    # github_api_url: "https://github.company.com/api/v3"  # For GitHub Enterprise
     template_directory: '.github/templates'
     template_name: 'pr-review.njk'
     pull_number: ${{ github.event.pull_request.number }}
@@ -33,6 +34,7 @@ Templates are ideal when you need:
 | `template_name`      | Template file name                     | No (default: `prompt.njk`) | `code-review.njk`                         |
 | `pull_number`        | PR number for context extraction       | No\*                       | `${{ github.event.pull_request.number }}` |
 | `repo_name`          | Repository in `owner/repo` format      | No\*                       | `${{ github.repository }}`                |
+| `github_api_url`     | GitHub API base URL for private instances | No                     | `https://github.company.com/api/v3`       |
 | `custom_context`     | Additional JSON context data           | No                         | `'{"priority": "high"}'`                  |
 
 \*Required together when using PR context extraction
