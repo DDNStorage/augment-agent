@@ -69,6 +69,10 @@ export class PRExtractor extends BaseExtractor<PRData> {
       throw new Error('GitHubService not provided');
     }
 
+    // Test authentication before making API calls
+    // Temporarily disabled - will test with actual PR API call
+    // await githubService.testAuthentication();
+
     const prData = await githubService.getPullRequest(pullNumber);
     const files = await githubService.getPullRequestFiles(pullNumber);
     const diffFilePath = await this.writeDiffFile(pullNumber, githubService);

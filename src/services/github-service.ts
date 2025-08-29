@@ -13,18 +13,97 @@ export class GitHubService {
   private repo: string;
 
   constructor(config: { token: string; owner: string; repo: string; baseUrl?: string }) {
-    const octokitConfig: any = { auth: config.token };
-    if (config.baseUrl) {
-      octokitConfig.baseUrl = config.baseUrl;
+    try {
+      const octokitConfig: any = { auth: config.token };
+      if (config.baseUrl) {
+        octokitConfig.baseUrl = config.baseUrl;
+        logger.debug('Using custom GitHub API URL', { baseUrl: config.baseUrl });
+      } else {
+        logger.debug('Using default GitHub.com API');
+      }
+
+      // Log token format for debugging (without exposing the actual token)
+      const tokenPrefix = config.token.substring(0, 4);
+      const tokenType = config.token.startsWith('ghp_') ? 'personal_access_token' :
+                       config.token.startsWith('ghs_') ? 'server_to_server_token' :
+                       config.token.startsWith('gho_') ? 'oauth_token' :
+                       config.token.startsWith('ghu_') ? 'user_access_token' :
+                       config.token.startsWith('github_pat_') ? 'fine_grained_token' : 'unknown';
+
+      logger.debug('GitHub token info', {
+        tokenPrefix: tokenPrefix + '...',
+        tokenType,
+        tokenLength: config.token.length
+      });
+
+      logger.debug('Creating Octokit instance with config', {
+        hasAuth: !!octokitConfig.auth,
+        hasBaseUrl: !!octokitConfig.baseUrl,
+        baseUrl: octokitConfig.baseUrl,
+        configKeys: Object.keys(octokitConfig)
+      });
+
+      // Try to create Octokit instance with explicit error handling
+      try {
+        this.octokit = new Octokit(octokitConfig);
+        logger.debug('Octokit instance created successfully');
+      } catch (octokitError) {
+        logger.error('Failed to create Octokit instance', octokitError);
+        throw new Error(`Failed to initialize GitHub API client: ${octokitError}`);
+      }
+      this.owner = config.owner;
+      this.repo = config.repo;
+
+      logger.debug('GitHubService initialized successfully', {
+        owner: this.owner,
+        repo: this.repo,
+        hasOctokit: !!this.octokit,
+        hasRestApi: !!(this.octokit && this.octokit.rest),
+        hasUserApi: !!(this.octokit && this.octokit.rest && this.octokit.rest.user)
+      });
+    } catch (error) {
+      logger.error('Failed to initialize GitHubService', error);
+      throw error;
     }
-    this.octokit = new Octokit(octokitConfig);
-    this.owner = config.owner;
-    this.repo = config.repo;
+  }
+
+  /**
+   * Test authentication and API connectivity
+   */
+  async testAuthentication(): Promise<void> {
+    try {
+      logger.debug('Testing GitHub authentication and API connectivity');
+
+      // Simply try to make an authenticated API call
+      const { data } = await this.octokit.rest.user.getAuthenticated();
+      logger.debug('Authentication successful', {
+        username: data.login,
+        userType: data.type
+      });
+    } catch (error: any) {
+      logger.error('Authentication test failed', {
+        error: error.message,
+        status: error.status
+      });
+
+      if (error.status === 401) {
+        throw new Error('GitHub authentication failed. Please check your token and ensure it has the required permissions.');
+      }
+      throw new Error(`GitHub API connectivity test failed: ${error.message}`);
+    }
   }
 
   async getPullRequest(pullNumber: number): Promise<PullRequestInfo> {
     try {
       logger.debug(`Fetching PR ${pullNumber} from ${this.owner}/${this.repo}`);
+
+      // Debug Octokit instance
+      logger.debug('Octokit instance check', {
+        hasOctokit: !!this.octokit,
+        hasRest: !!(this.octokit && this.octokit.rest),
+        hasPulls: !!(this.octokit && this.octokit.rest && this.octokit.rest.pulls),
+        hasGet: !!(this.octokit && this.octokit.rest && this.octokit.rest.pulls && this.octokit.rest.pulls.get)
+      });
 
       const { data } = await this.octokit.rest.pulls.get({
         owner: this.owner,
@@ -61,8 +140,25 @@ export class GitHubService {
           },
         },
       };
-    } catch (error) {
-      logger.error(`${ERROR.GITHUB.API_ERROR}: Failed to fetch PR ${pullNumber}`, error);
+    } catch (error: any) {
+      const errorMessage = `${ERROR.GITHUB.API_ERROR}: Failed to fetch PR ${pullNumber}`;
+
+      // Provide specific guidance for authentication errors
+      if (error.status === 401) {
+        logger.error(`${errorMessage} - Authentication failed. This could be due to:
+1. Invalid or expired GitHub token
+2. Token doesn't have required permissions (needs 'repo' scope)
+3. For GitHub Enterprise: Incorrect github_api_url parameter
+4. For GitHub Enterprise: Token might need to be generated from the Enterprise instance`, error);
+      } else if (error.status === 404) {
+        logger.error(`${errorMessage} - Repository or PR not found. Check:
+1. Repository name format (should be 'owner/repo')
+2. PR number exists
+3. Token has access to the repository`, error);
+      } else {
+        logger.error(errorMessage, error);
+      }
+
       throw error;
     }
   }
