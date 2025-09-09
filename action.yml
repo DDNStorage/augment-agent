@@ -57,7 +57,7 @@ runs:
     - name: Setup Bun
       shell: bash
       run: |
-         apt-get update && apt-get install -y curl unzip && curl -fsSL https://bun.sh/install | bash
+         sudo apt-get update && sudo apt-get install -y curl unzip && curl -fsSL https://bun.sh/install | bash
     - name: Run Augment Agent
       run: $HOME/.bun/bin/bun run $GITHUB_ACTION_PATH/src/index.ts
       shell: bash
