@@ -70,6 +70,26 @@ function setupEnvironment(inputs: ActionInputs): void {
   if (inputs.githubToken) {
     process.env.GITHUB_API_TOKEN = inputs.githubToken;
   }
+
+  // Set GitHub API URL if provided (for GitHub Enterprise)
+  // Set multiple environment variables that auggie might check
+  if (inputs.githubApiUrl) {
+    process.env.GITHUB_API_URL = inputs.githubApiUrl;
+    process.env.GITHUB_BASE_URL = inputs.githubApiUrl;
+    process.env.GITHUB_ENTERPRISE_URL = inputs.githubApiUrl;
+  }
+
+  // Debug log environment setup
+  logger.debug('Environment variables set for auggie', {
+    hasAugmentSessionAuth: !!process.env.AUGMENT_SESSION_AUTH,
+    hasAugmentApiToken: !!process.env.AUGMENT_API_TOKEN,
+    hasAugmentApiUrl: !!process.env.AUGMENT_API_URL,
+    hasGithubApiToken: !!process.env.GITHUB_API_TOKEN,
+    hasGithubApiUrl: !!process.env.GITHUB_API_URL,
+    githubApiUrl: process.env.GITHUB_API_URL,
+    githubBaseUrl: process.env.GITHUB_BASE_URL,
+    githubEnterpriseUrl: process.env.GITHUB_ENTERPRISE_URL
+  });
 }
 
 /**
