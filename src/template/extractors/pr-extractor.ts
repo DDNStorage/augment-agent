@@ -26,6 +26,15 @@ export class PRExtractor extends BaseExtractor<PRData> {
     if (inputs.repoName && inputs.githubToken) {
       try {
         const repoInfo = ValidationUtils.parseRepoName(inputs.repoName);
+
+        logger.debug('Creating GitHubService with config', {
+          owner: repoInfo.owner,
+          repo: repoInfo.repo,
+          hasToken: !!inputs.githubToken,
+          githubApiUrl: inputs.githubApiUrl,
+          hasGithubApiUrl: !!inputs.githubApiUrl
+        });
+
         const githubService = new GitHubService({
           token: inputs.githubToken,
           owner: repoInfo.owner,

@@ -16,6 +16,7 @@ const ActionInputsSchema = z
     augmentApiToken: z.string().optional(),
     augmentApiUrl: z.string().optional(),
     githubToken: z.string().optional(),
+    githubApiUrl: z.string().optional(),
     instruction: z.string().optional(),
     instructionFile: z.string().optional(),
     model: z.string().optional(),
@@ -133,6 +134,21 @@ const ActionInputsSchema = z
       message: 'Augment API URL must be a valid URL',
       path: ['augmentApiUrl'],
     }
+  )
+  .refine(
+    data => {
+      if (!data.githubApiUrl) return true;
+      try {
+        new URL(data.githubApiUrl);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: 'GitHub API URL must be a valid URL',
+      path: ['githubApiUrl'],
+    }
   );
 
 /**
@@ -166,9 +182,17 @@ export class ValidationUtils {
           .filter((entry): entry is [string, any] => entry !== null)
       );
 
-      logger.debug('Validating action inputs');
+      logger.debug('Validating action inputs', {
+        inputKeys: Object.keys(inputs),
+        githubApiUrl: inputs.githubApiUrl,
+        hasGithubApiUrl: !!inputs.githubApiUrl
+      });
       const validated = ActionInputsSchema.parse(inputs) as ActionInputs;
-      logger.debug('Action inputs validated successfully');
+      logger.debug('Action inputs validated successfully', {
+        validatedKeys: Object.keys(validated),
+        githubApiUrl: validated.githubApiUrl,
+        hasGithubApiUrl: !!validated.githubApiUrl
+      });
       return validated;
     } catch (error) {
       if (error instanceof z.ZodError) {
