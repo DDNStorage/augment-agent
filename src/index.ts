@@ -32,21 +32,53 @@ function execCommand(
       })
       .join(' ')}`;
 
+    logger.debug('Spawning command', {
+      fullCommand,
+      command,
+      args: args.length,
+      cwd: options.cwd || process.cwd()
+    });
+
     const child = spawn(fullCommand, [], {
-      stdio: 'inherit',
+      stdio: ['inherit', 'inherit', 'pipe'], // Capture stderr for error logging
       shell: true,
       ...options,
     });
 
+    let stderrData = '';
+    if (child.stderr) {
+      child.stderr.on('data', (data) => {
+        const chunk = data.toString();
+        stderrData += chunk;
+        // Also output to console in real-time
+        process.stderr.write(chunk);
+      });
+    }
+
     child.on('close', code => {
+      logger.debug('Command completed', {
+        command,
+        exitCode: code,
+        success: code === 0,
+        hasStderrOutput: !!stderrData,
+        stderrLength: stderrData.length
+      });
+
       if (code === 0) {
         resolve(code);
       } else {
-        reject(new Error(`Command failed with exit code ${code}`));
+        const errorMsg = `Command '${command}' failed with exit code ${code}`;
+        logger.error(errorMsg, {
+          fullCommand,
+          exitCode: code,
+          stderrOutput: stderrData.trim() || 'No stderr output captured'
+        });
+        reject(new Error(`${errorMsg}. Error output: ${stderrData.trim() || 'None'}`));
       }
     });
 
     child.on('error', error => {
+      logger.error('Command execution error', error, { command, fullCommand });
       reject(error);
     });
   });
@@ -145,6 +177,31 @@ async function runAugmentScript(inputs: ActionInputs): Promise<void> {
     args.push('--instruction');
   }
   args.push(instruction_value);
+
+  logger.debug('Executing auggie command', {
+    command: 'auggie',
+    args: args,
+    environmentVariables: {
+      AUGMENT_SESSION_AUTH: !!process.env.AUGMENT_SESSION_AUTH,
+      AUGMENT_API_TOKEN: !!process.env.AUGMENT_API_TOKEN,
+      AUGMENT_API_URL: process.env.AUGMENT_API_URL,
+      GITHUB_API_TOKEN: !!process.env.GITHUB_API_TOKEN,
+      GITHUB_API_URL: process.env.GITHUB_API_URL,
+      GITHUB_BASE_URL: process.env.GITHUB_BASE_URL,
+      GITHUB_ENTERPRISE_URL: process.env.GITHUB_ENTERPRISE_URL
+    }
+  });
+
+  // Test if auggie can see environment variables (for debugging)
+  logger.debug('Testing auggie environment variable visibility');
+  try {
+    await execCommand('env', ['|', 'grep', '-E', '"(GITHUB|AUGMENT)"']);
+  } catch (error) {
+    logger.debug('Environment variable test failed (this is expected in some environments)', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+
   await execCommand('auggie', args);
   logger.info('✅ Augment Agent completed successfully');
 }
