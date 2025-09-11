@@ -21,7 +21,7 @@ export class PRExtractor extends BaseExtractor<PRData> {
   /**
    * Creates a PRExtractor instance configured for the given inputs
    */
-  static create(inputs: ActionInputs): PRExtractor {
+  static async create(inputs: ActionInputs): Promise<PRExtractor> {
     // If we have complete repo information, create with pre-configured GitHub service
     if (inputs.repoName && inputs.githubToken) {
       try {
@@ -45,6 +45,16 @@ export class PRExtractor extends BaseExtractor<PRData> {
           owner: repoInfo.owner,
           repo: repoInfo.repo,
         });
+
+        // Test authentication to verify GitHub Enterprise connectivity
+        try {
+          await githubService.testAuthentication();
+          logger.debug('GitHub Enterprise authentication test passed');
+        } catch (authError) {
+          logger.error('GitHub Enterprise authentication test failed', authError);
+          // Don't throw here, let the actual PR extraction handle the error
+        }
+
         return new PRExtractor(githubService);
       } catch (error) {
         logger.debug('Failed to create pre-configured GitHubService, will create lazily', {

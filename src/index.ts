@@ -134,7 +134,7 @@ async function processTemplate(inputs: ActionInputs): Promise<string> {
   });
 
   // Create and run template processor
-  const processor = TemplateProcessor.create(inputs);
+  const processor = await TemplateProcessor.create(inputs);
   const instructionFilePath = await processor.processTemplate(inputs);
 
   logger.info('Template processing completed', {

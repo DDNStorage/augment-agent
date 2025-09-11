@@ -16,8 +16,28 @@ export class GitHubService {
     try {
       const octokitConfig: any = { auth: config.token };
       if (config.baseUrl) {
-        octokitConfig.baseUrl = config.baseUrl;
-        logger.debug('Using custom GitHub API URL', { baseUrl: config.baseUrl });
+        // Validate and potentially fix the GitHub Enterprise URL
+        let baseUrl = config.baseUrl;
+
+        // Ensure the URL ends with /api/v3 for GitHub Enterprise
+        if (!baseUrl.endsWith('/api/v3')) {
+          if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl + 'api/v3';
+          } else {
+            baseUrl = baseUrl + '/api/v3';
+          }
+          logger.debug('Adjusted GitHub API URL to include /api/v3', {
+            original: config.baseUrl,
+            adjusted: baseUrl
+          });
+        }
+
+        octokitConfig.baseUrl = baseUrl;
+        logger.debug('Using custom GitHub API URL', {
+          baseUrl: baseUrl,
+          originalUrl: config.baseUrl,
+          wasAdjusted: baseUrl !== config.baseUrl
+        });
       } else {
         logger.debug('Using default GitHub.com API');
       }
@@ -46,7 +66,12 @@ export class GitHubService {
       // Try to create Octokit instance with explicit error handling
       try {
         this.octokit = new Octokit(octokitConfig);
-        logger.debug('Octokit instance created successfully');
+        logger.debug('Octokit instance created successfully', {
+          octokitVersion: (Octokit as any).VERSION || 'unknown',
+          configUsed: octokitConfig,
+          instanceType: typeof this.octokit,
+          hasRequest: !!(this.octokit as any).request
+        });
       } catch (octokitError) {
         logger.error('Failed to create Octokit instance', octokitError);
         throw new Error(`Failed to initialize GitHub API client: ${octokitError}`);
@@ -59,8 +84,15 @@ export class GitHubService {
         repo: this.repo,
         hasOctokit: !!this.octokit,
         hasRestApi: !!(this.octokit && this.octokit.rest),
-        hasUserApi: !!(this.octokit && this.octokit.rest && this.octokit.rest.user)
+        hasUserApi: !!(this.octokit && this.octokit.rest && this.octokit.rest.user),
+        // Debug the Octokit structure
+        octokitKeys: this.octokit ? Object.keys(this.octokit) : [],
+        restKeys: this.octokit?.rest ? Object.keys(this.octokit.rest) : [],
+        userApiExists: this.octokit?.rest?.user !== undefined,
+        userApiType: typeof this.octokit?.rest?.user
       });
+
+      // Note: Authentication test will be called separately since constructors cannot be async
     } catch (error) {
       logger.error('Failed to initialize GitHubService', error);
       throw error;
@@ -72,22 +104,46 @@ export class GitHubService {
    */
   async testAuthentication(): Promise<void> {
     try {
-      logger.debug('Testing GitHub authentication and API connectivity');
+      logger.debug('Testing GitHub authentication and API connectivity', {
+        hasUserApi: !!(this.octokit?.rest?.user),
+        hasGetAuthenticated: !!(this.octokit?.rest?.user?.getAuthenticated),
+        baseUrl: (this.octokit as any)?.request?.endpoint?.DEFAULTS?.baseUrl
+      });
 
-      // Simply try to make an authenticated API call
+      // Check if user API is available
+      if (!this.octokit?.rest?.user) {
+        throw new Error('GitHub user API is not available on this Octokit instance');
+      }
+
+      if (!this.octokit.rest.user.getAuthenticated) {
+        throw new Error('getAuthenticated method is not available on user API');
+      }
+
+      // Try to make an authenticated API call
       const { data } = await this.octokit.rest.user.getAuthenticated();
       logger.debug('Authentication successful', {
         username: data.login,
-        userType: data.type
+        userType: data.type,
+        userId: data.id,
+        apiUrl: (this.octokit as any)?.request?.endpoint?.DEFAULTS?.baseUrl
       });
     } catch (error: any) {
       logger.error('Authentication test failed', {
         error: error.message,
-        status: error.status
+        status: error.status,
+        response: error.response?.data,
+        request: {
+          method: error.request?.method,
+          url: error.request?.url,
+          headers: error.request?.headers ? Object.keys(error.request.headers) : undefined
+        }
       });
 
       if (error.status === 401) {
         throw new Error('GitHub authentication failed. Please check your token and ensure it has the required permissions.');
+      }
+      if (error.status === 404) {
+        throw new Error('GitHub API endpoint not found. Please verify the github_api_url is correct for your GitHub Enterprise instance.');
       }
       throw new Error(`GitHub API connectivity test failed: ${error.message}`);
     }

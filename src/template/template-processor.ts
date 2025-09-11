@@ -15,8 +15,9 @@ export class TemplateProcessor {
     private contextBuilder: ContextBuilder
   ) {}
 
-  static create(inputs: ActionInputs): TemplateProcessor {
-    return new TemplateProcessor(TemplateEngine.create(inputs), ContextBuilder.create(inputs));
+  static async create(inputs: ActionInputs): Promise<TemplateProcessor> {
+    const contextBuilder = await ContextBuilder.create(inputs);
+    return new TemplateProcessor(TemplateEngine.create(inputs), contextBuilder);
   }
 
   async processTemplate(inputs: ActionInputs): Promise<string> {

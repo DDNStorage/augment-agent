@@ -14,8 +14,9 @@ export class ContextBuilder {
     private customContextExtractor: CustomContextExtractor
   ) {}
 
-  static create(inputs: ActionInputs): ContextBuilder {
-    return new ContextBuilder(PRExtractor.create(inputs), CustomContextExtractor.create(inputs));
+  static async create(inputs: ActionInputs): Promise<ContextBuilder> {
+    const prExtractor = await PRExtractor.create(inputs);
+    return new ContextBuilder(prExtractor, CustomContextExtractor.create(inputs));
   }
 
   async buildContext(inputs: ActionInputs): Promise<TemplateContext> {
